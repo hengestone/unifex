@@ -1,53 +1,25 @@
-defmodule Unifex.NativeCodeGenerator do
-  @moduledoc """
-  Module responsible for C code genearation based on Unifex specs
-  """
-  alias Unifex.{BaseType, InterfaceIO}
-  use Bunch
+defmodule Unifex.NativeCodeGenerator.NifCodeGenerator do
+  alias Unifex.NativeCodeGenerator.CodeGenerator
+  @behaviour CodeGenerator
 
   alias Unifex.NativeCodeGenerator.CodeGeneratorUtils
   use CodeGeneratorUtils
 
-  @type code_t() :: String.t()
+  @impl CodeGenerator
+  defdelegate generate_result(res), to: BaseType, as: :generate_arg_serialize
 
-  defmacro __using__(_args) do
-    quote do
-      use Unifex.NativeCodeGenerator.CodeGeneratorUtils
-    end
+  @impl CodeGenerator
+  def generate_tuple_maker(content) do
+    ~g<({
+          const ERL_NIF_TERM terms[] = {
+            #{content |> gen('j(,\n    )iit')}
+          };
+          enif_make_tuple_from_array(env, terms, #{length(content)});
+        })>
   end
 
-  @doc """
-  Generates C boilerplate for a native code based on a spec
-
-  Takes the name for the `.c` and `.h` files and the specs
-  parsed by `Unifex.SpecsParser.parse_specs()/1` and generates code of header
-  and source code, returning them in a tuple of 2 strings.
-  """
-  @spec generate_code(name :: String.t(), specs :: Unifex.SpecsParser.parsed_specs_t()) ::
-          {code_t(), code_t()}
-  def generate_code(name, specs) do
-    module = specs |> Keyword.get(:module)
-    fun_specs = specs |> Keyword.get_values(:fun_specs)
-    dirty_funs = specs |> Keyword.get_values(:dirty) |> List.flatten() |> Map.new()
-    sends = specs |> Keyword.get_values(:sends)
-    callbacks = specs |> Keyword.get_values(:callbacks)
-
-    {functions, results} =
-      fun_specs
-      |> Enum.map(fn {name, args, results} -> {{name, args}, {name, results}} end)
-      |> Enum.unzip()
-
-    results = results |> Enum.flat_map(fn {name, specs} -> specs |> Enum.map(&{name, &1}) end)
-    header = generate_header(name, module, functions, results, sends, callbacks)
-    source = generate_source(name, module, functions, results, dirty_funs, sends, callbacks)
-
-    {header, source}
-  end
-
-  defdelegate generate_function_spec_traverse_helper(specs),
-    to: Unifex.NativeCodeGenerator.CodeGenerator
-
-  defp generate_header(name, module, functions, results, sends, callbacks) do
+  @impl CodeGenerator
+  def generate_header(name, module, functions, results, sends, callbacks) do
     ~g"""
     #pragma once
 
@@ -104,7 +76,8 @@ defmodule Unifex.NativeCodeGenerator do
     """r
   end
 
-  defp generate_source(name, module, functions, results, dirty_funs, sends, callbacks) do
+  @impl CodeGenerator
+  def generate_source(name, module, functions, results, dirty_funs, sends, callbacks) do
     ~g"""
     #include "#{name}.h"
 
@@ -124,6 +97,10 @@ defmodule Unifex.NativeCodeGenerator do
     """r
   end
 
+  defdelegate generate_functions(results, generator), to: CodeGeneratorUtils
+  defdelegate generate_functions_declarations(results, generator), to: CodeGeneratorUtils
+  defdelegate generate_function_spec_traverse_helper(specs), to: CodeGenerator
+
   defp generate_implemented_function_declaration({name, args}) do
     args_declarations =
       [~g<UnifexEnv* env> | args |> Enum.flat_map(&BaseType.generate_declaration/1)]
@@ -132,26 +109,9 @@ defmodule Unifex.NativeCodeGenerator do
     ~g<UNIFEX_TERM #{name}(#{args_declarations})>
   end
 
-  defp generate_functions(results, generator) do
-    results
-    |> Enum.map(generator)
-    |> Enum.join("\n")
-  end
-
-  defp generate_functions_declarations(results, generator) do
-    results
-    |> Enum.map(generator)
-    |> Enum.map(&(&1 <> ";"))
-    |> Enum.join("\n")
-  end
-
   defp generate_result_function({name, specs}) do
     declaration = generate_result_function_declaration({name, specs})
     {result, _meta} = generate_function_spec_traverse_helper(specs)
-
-    IO.puts("a a a a a  a a a a a  a a a a a a a a a a a a a a a a a a  a a a a  aa a  a a a a a")
-    IO.inspect(result)
-    # IO.inspect (result|>gen('it'))
 
     ~g"""
     #{declaration} {
@@ -435,18 +395,11 @@ defmodule Unifex.NativeCodeGenerator do
     """
   end
 
-  # defp generate_tuple_maker(content) do
-  #   # IO.inspect content
-  #   # IO.inspect 
-  #   ~g<({
-  #     const ERL_NIF_TERM terms[] = {
-  #       #{content |> gen('j(,\n    )iit')}
-  #     };
-  #     enif_make_tuple_from_array(env, terms, #{length(content)});
-  #   })>
-  # end
-
   defp generate_unifex_env() do
     ~g<UnifexEnv *unifex_env = env;>
+  end
+
+  defp indent(line) do
+    "  #{line}"
   end
 end

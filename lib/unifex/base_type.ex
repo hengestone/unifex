@@ -5,8 +5,8 @@ defmodule Unifex.BaseType do
   The generators from this module are trying to delegate the calls to the callbacks in modules adequate for the type
   but provide fallback values (all the callbacks are optional)
   """
-  alias Unifex.NativeCodeGenerator
-  use NativeCodeGenerator
+  alias Unifex.NativeCodeGenerator.CodeGeneratorUtils
+  use CodeGeneratorUtils
 
   @type t :: atom | {:list, atom}
   @type spec_tuple_t :: {name :: atom(), type :: t}
