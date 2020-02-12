@@ -8,7 +8,7 @@ defmodule Unifex.CodeGenerator.NIFCodeGenerator do
   use Bunch
   use CodeGeneratorUtils
 
-  @behaviour CodeGeneratorUtils
+  @behaviour CodeGenerator
 
   CodeGeneratorUtils.spec_traverse_helper_generating_macro()
 
@@ -406,9 +406,5 @@ defmodule Unifex.CodeGenerator.NIFCodeGenerator do
 
   defp generate_unifex_env() do
     ~g<UnifexEnv *unifex_env = env;>
-  end
-
-  defp indent(line) do
-    "  #{line}"
   end
 end
