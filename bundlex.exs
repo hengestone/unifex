@@ -3,7 +3,8 @@ defmodule Unifex.BundlexProject do
 
   def project do
     [
-      libs: libs()
+      libs: libs(),
+      nifs: nifs()
     ]
   end
 
@@ -15,6 +16,15 @@ defmodule Unifex.BundlexProject do
       ],
       cnode_utils: [
         sources: ["cnode_utils.c"]
+      ]
+    ]
+  end
+
+  defp nifs do
+    [
+      cnode_payload_handler: [
+        deps: [shmex: :lib_nif, unifex: :unifex],
+        sources: ["cnode_payload_handler.c", "_generated/cnode_payload_handler.c"]
       ]
     ]
   end

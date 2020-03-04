@@ -5,6 +5,10 @@ defmodule Unifex.UnifexCNode do
 
   require Bundlex.CNode
 
+  use Bunch
+  require Bundlex.Helper.MixHelper
+  alias Bundlex.Helper.MixHelper
+
   @enforce_keys [:server, :node]
   defstruct @enforce_keys
 
@@ -53,25 +57,43 @@ defmodule Unifex.UnifexCNode do
   Spawns specific CNode and links to it
   """
   defmacro start_link(native_name) do
-    quote do
-      require Bundlex.CNode
+    app = MixHelper.get_app!(__CALLER__.module)
 
-      unquote(native_name)
-      |> Bundlex.CNode.start_link()
-      |> unquote(__MODULE__).cast_on_start_t
+    quote do
+      unquote(__MODULE__).start_link(unquote(app), unquote(native_name))
     end
+  end
+
+  @spec start_link(app :: atom, native_name :: atom) :: on_start_t
+  def start_link(app, native_name) do
+    do_start(app, native_name, true)
   end
 
   @doc """
   Spawns specific CNode, but without linking.
   """
   defmacro start(native_name) do
-    quote do
-      require Bundlex.CNode
+    app = MixHelper.get_app!(__CALLER__.module)
 
-      unquote(native_name)
-      |> Bundlex.CNode.start()
-      |> unquote(__MODULE__).cast_on_start_t
+    quote do
+      unquote(__MODULE__).start(unquote(app), unquote(native_name))
+    end
+  end
+
+  @spec start(app :: atom, native_name :: atom) :: on_start_t
+  def start(app, native_name) do
+    do_start(app, native_name, false)
+  end
+
+  defp do_start(app, native_name, link?) do
+    {:ok, pid} =
+      GenServer.start(
+        __MODULE__.Server,
+        %{app: app, native_name: native_name, caller: self(), link?: link?}
+      )
+
+    receive do
+      {^pid, res} -> res
     end
   end
 
@@ -79,20 +101,16 @@ defmodule Unifex.UnifexCNode do
   Disconnects from CNode.
   """
   @spec stop(t) :: :ok | {:error, :disconnect_cnode}
-  def stop(%__MODULE__{} = unifex_cnode) do
-    unifex_cnode
-    |> cast_cnode
-    |> Bundlex.CNode.stop()
+  def stop(%__MODULE__{server: server}) do
+    GenServer.call(server, :stop)
   end
 
   @doc """
   Starts monitoring CNode from the calling process.
   """
   @spec monitor(t) :: reference
-  def monitor(%__MODULE__{} = unifex_cnode) do
-    unifex_cnode
-    |> cast_cnode
-    |> Bundlex.CNode.monitor()
+  def monitor(%__MODULE__{server: server}) do
+    Process.monitor(server)
   end
 
   @doc """
@@ -101,8 +119,8 @@ defmodule Unifex.UnifexCNode do
   @spec send(t, message :: term) :: :ok
   def send(%__MODULE__{} = unifex_cnode, message) do
     unifex_cnode
-    |> cast_cnode
-    |> Bundlex.CNode.send(message)
+    # |> cast_cnode
+    |> psend(message)
   end
 
   defp unpack_result({:result, content}) do
@@ -122,14 +140,24 @@ defmodule Unifex.UnifexCNode do
     msg = [fun_name | args] |> List.to_tuple()
 
     unifex_cnode
-    |> cast_cnode
-    |> Bundlex.CNode.call(msg, timeout)
+    # |> cast_cnode
+    |> pcall(msg, timeout)
     |> case do
       {:result, _content} = response ->
         response |> unpack_result
 
       {:error, _reason} = response ->
         response
+    end
+  end
+
+  defp pcall(%__MODULE__{node: node}, message, timeout) do
+    Kernel.send({:any, node}, message)
+
+    receive do
+      {^node, response} -> response
+    after
+      timeout -> raise "Timeout upon call to the CNode #{inspect(node)}"
     end
   end
 
@@ -141,8 +169,14 @@ defmodule Unifex.UnifexCNode do
     msg = [fun_name | args] |> List.to_tuple()
 
     unifex_cnode
-    |> cast_cnode
-    |> Bundlex.CNode.send(msg)
+    # |> cast_cnode
+    |> psend(msg)
+  end
+
+  @spec psend(t, message :: term) :: :ok
+  def psend(%__MODULE__{node: node}, message) do
+    Kernel.send({:any, node}, message)
+    :ok
   end
 
   @doc """

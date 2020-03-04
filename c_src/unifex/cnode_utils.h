@@ -44,6 +44,7 @@ typedef struct cnode_context {
   erlang_pid *e_pid;
   UnifexStateWrapper *wrapper;
   state_linked_list *released_states;
+  erlang_pid *gen_server_pid;
 } cnode_context;
 
 typedef cnode_context UnifexEnv;
