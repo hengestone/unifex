@@ -33,14 +33,14 @@ defmodule Unifex.UnifexCNode.Server do
      }}
   end
 
-  @impl true
-  def handle_info(
-        {port, {:data, {:eol, 'dupa'}}},
-        %{port: port, state: _any, msg_part?: false} = state
-      ) do
-    IO.puts("\n\n dozdalem 'dupa' X~~~~~~~~DDDDDDDDD \n\n\n\n")
-    {:noreply, state}
-  end
+  #   @impl true
+  #   def handle_info(
+  #         {port, {:data, {:eol, 'dupa'}}},
+  #         %{port: port, state: _any, msg_part?: false} = state
+  #       ) do
+  #     IO.puts("\n\n dozdalem 'dupa' X~~~~~~~~DDDDDDDDD \n\n\n\n")
+  #     {:noreply, state}
+  #   end
 
   @impl true
   def handle_info(
@@ -102,6 +102,38 @@ defmodule Unifex.UnifexCNode.Server do
     {:stop, :normal, disconnect(state.cnode), state}
   end
 
+  @impl true
+  def handle_call({:alloc_shm, size}, _from, state) do
+    state = state |> Map.put_new_lazy(:shm_handler, &start_shm_handler/0)
+    rep = GenServer.call(state.shm_handler, {:alloc, size})
+    {:reply, rep, state}
+  end
+
+  @impl true
+  def handle_call({:realloc_shm, shm, dest_size}, _from, state) do
+    state = state |> Map.put_new_lazy(:shm_handler, &start_shm_handler/0)
+    rep = GenServer.call(state.shm_handler, {:realloc, shm, dest_size})
+    {:reply, rep, state}
+  end
+
+  @impl true
+  def handle_cast({:release, content}, _from, state) do
+    state = state |> Map.put_new_lazy(:shm_handler, &start_shm_handler/0)
+    GenServer.cast(state.shm_handler, {:release, content})
+    {:noreply, state}
+  end
+
+  @impl true
+  def terminate(reason, %{shm_handler: shm_handler} = state) do
+    GenServer.stop(shm_handler)
+    {:stop, reason}
+  end
+
+  @impl true
+  def terminate(reason, state) do
+    {:stop, reason}
+  end
+
   defp ensure_node_distributed(empd_status \\ :unknown) do
     if Node.alive?() do
       :ok
@@ -145,6 +177,16 @@ defmodule Unifex.UnifexCNode.Server do
 
   defp host_name(node \\ Node.self()) do
     node |> to_string() |> String.split("@") |> List.last()
+  end
+
+  defp start_shm_handler() do
+    {:ok, pid} =
+      GenServer.start(
+        Unifex.UnifexCNode.ShmHandler,
+        MapSet.new()
+      )
+
+    pid
   end
 end
 

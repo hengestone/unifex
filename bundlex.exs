@@ -22,10 +22,10 @@ defmodule Unifex.BundlexProject do
 
   defp nifs do
     [
-      cnode_payload_handler: [
-        deps: [shmex: :lib_nif, unifex: :unifex],
-        sources: ["cnode_payload_handler.c", "_generated/cnode_payload_handler.c"]
-      ]
+      # cnode_payload_handler: [
+      #   deps: [shmex: :lib_nif, unifex: :unifex],
+      #   sources: ["cnode_payload_handler.c", "_generated/cnode_payload_handler.c"]
+      # ]
     ]
   end
 end

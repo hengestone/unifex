@@ -7,7 +7,7 @@ defmodule Unifex.MixProject do
   def project do
     [
       app: :unifex,
-      compilers: [:unifex, :bundlex] ++ Mix.compilers(),
+      compilers: [:bundlex] ++ Mix.compilers(),
       version: @version,
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
@@ -50,8 +50,10 @@ defmodule Unifex.MixProject do
     [
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:bunch, "~> 1.0"},
-      {:shmex, "~> 0.2.0"},
-      {:bundlex, "~> 0.2.0"},
+      # {:shmex, "~> 0.2.0"},
+      {:shmex, path: "/Users/feliks/membrane/shmex", override: true},
+      # {:bundlex, "~> 0.2.0"},
+      {:bundlex, path: "/Users/feliks/membrane/bundlex", override: true},
       {:dialyxir, "~> 1.0.0-rc.7", only: [:dev], runtime: false}
     ]
   end
