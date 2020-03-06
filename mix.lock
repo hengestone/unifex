@@ -1,5 +1,5 @@
 %{
-  "bunch": {:hex, :bunch, "1.2.0", "f26c6c84e2e5e245620c73a0a4560ca91a75b25744012537e055426568916ab7", [:mix], [], "hexpm", "66c1ea8716a7c03124f3bf62c0b167f7294c4948d1688bd2027dadaa4ec032de"},
+  "bunch": {:hex, :bunch, "1.3.0", "51b4423088b7fb9e21eae6d6bc5e5d219d955ea5556fbd6130bfb6213df4be32", [:mix], [], "hexpm", "9ad233a2bacc0dae8aa6553a9b9057f27446443b1c5903c3479b6f9f3820ce2d"},
   "bunch_native": {:hex, :bunch_native, "0.2.1", "0227d2a751a32f8c0b77dfec57c8dc7216351720c9c755c467e6d9387467fd1f", [:mix], [{:bundlex, "~> 0.2.7", [hex: :bundlex, repo: "hexpm", optional: false]}], "hexpm", "f0819b2f9f78086447ac7459a8e7b6e25ad535b9d3a4f9469253c552137de6b4"},
   "bundlex": {:hex, :bundlex, "0.2.7", "8f46199bf4cf84a60cdfc142edeafbab37040167acc35dda8aa70433f2ff8162", [:mix], [{:bunch, "~> 1.0", [hex: :bunch, repo: "hexpm", optional: false]}, {:qex, "~> 0.5", [hex: :qex, repo: "hexpm", optional: false]}, {:secure_random, "~> 0.5", [hex: :secure_random, repo: "hexpm", optional: false]}], "hexpm", "5751b4bb5dd0576ca70519239e2ee7b495b17e4bbfbe3ef1f60ae0c12c0e4fe9"},
   "dialyxir": {:hex, :dialyxir, "1.0.0-rc.7", "6287f8f2cb45df8584317a4be1075b8c9b8a69de8eeb82b4d9e6c761cf2664cd", [:mix], [{:erlex, ">= 0.2.5", [hex: :erlex, repo: "hexpm", optional: false]}], "hexpm", "506294d6c543e4e5282d4852aead19ace8a35bedeb043f9256a06a6336827122"},

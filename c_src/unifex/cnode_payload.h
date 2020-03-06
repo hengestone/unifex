@@ -4,6 +4,9 @@
 #include <ei_connect.h>
 #include <erl_interface.h>
 #include <shmex/lib_cnode.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,7 +16,7 @@ typedef enum { UNIFEX_PAYLOAD_BINARY, UNIFEX_PAYLOAD_SHM } UnifexPayloadType;
 
 typedef struct Binary {
   unsigned char *data;
-  unsigned int lenght;
+  unsigned int length;
 } Binary;
 
 typedef struct _UnifexPayload {
@@ -25,7 +28,8 @@ typedef struct _UnifexPayload {
   } payload_struct;
   UnifexPayloadType type;
   int owned;
-  erlang_pid *gen_server_pid = NULL;
+  erlang_pid *gen_server_pid;
+  int ei_fd;
 } UnifexPayload;
 
 typedef struct _UnifexPayload UnifexPayload;

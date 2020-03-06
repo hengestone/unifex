@@ -16,6 +16,10 @@ defmodule Unifex.BundlexProject do
       ],
       cnode_utils: [
         sources: ["cnode_utils.c"]
+      ],
+      cnode_payload: [
+        deps: [shmex: :lib_cnode],
+        sources: ["cnode_payload.c", "cnode_utils.c"]
       ]
     ]
   end

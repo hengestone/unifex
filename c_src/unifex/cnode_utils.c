@@ -73,15 +73,6 @@ state_linked_list *new_state_linked_list() {
   return res;
 }
 
-int receive(int ei_fd, const char *node_name, UnifexStateWrapper *state,
-            erlang_pid *gen_server_pid) {
-  if (gen_server_pid == NULL) {
-    // before first receive
-    return receive_gen_server_pid(ei_fd, gen_server_pid);
-  }
-  return receive_reqular_msg(ei_fd, node_name, state, gen_server_pid);
-}
-
 int receive_gen_server_pid(int ei_fd, erlang_pid *pid_dst) {
   ei_x_buff in_buff;
   ei_x_new(&in_buff);
@@ -129,6 +120,15 @@ int receive_reqular_msg(int ei_fd, const char *node_name,
 
   ei_x_free(&in_buf);
   return res;
+}
+
+int receive(int ei_fd, const char *node_name, UnifexStateWrapper *state,
+            erlang_pid *gen_server_pid) {
+  if (gen_server_pid == NULL) {
+    // before first receive
+    return receive_gen_server_pid(ei_fd, gen_server_pid);
+  }
+  return receive_reqular_msg(ei_fd, node_name, state, gen_server_pid);
 }
 
 int validate_args(int argc, char **argv) {
