@@ -108,7 +108,7 @@ defmodule Unifex.UnifexCNode.Server do
   end
 
   @impl true
-  def handle_cast({:release, content}, state) do
+  def handle_cast({:release_shm, content}, state) do
     state = state |> Map.put_new_lazy(:shm_handler, &start_shm_handler/0)
     state.shm_handler |> GenServer.cast({:release, content})
     {:noreply, state}
@@ -117,12 +117,12 @@ defmodule Unifex.UnifexCNode.Server do
   @impl true
   def terminate(reason, %{shm_handler: shm_handler} = _state) do
     GenServer.stop(shm_handler)
-    {:stop, reason}
+    :ok
   end
 
   @impl true
   def terminate(reason, _state) do
-    {:stop, reason}
+    :ok
   end
 
   defp ensure_node_distributed(empd_status \\ :unknown) do
@@ -171,12 +171,7 @@ defmodule Unifex.UnifexCNode.Server do
   end
 
   defp start_shm_handler() do
-    {:ok, pid} =
-      GenServer.start(
-        Unifex.UnifexCNode.ShmHandler,
-        MapSet.new()
-      )
-
+    {:ok, pid} = Unifex.UnifexCNode.ShmHandler.start()
     pid
   end
 end

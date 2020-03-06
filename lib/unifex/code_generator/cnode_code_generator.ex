@@ -226,7 +226,7 @@ defmodule Unifex.CodeGenerator.CNodeCodeGenerator do
 
   defp generate_handle_message_declaration() do
     "int handle_message(int ei_fd, const char *node_name, erlang_msg emsg,
-            ei_x_buff *in_buff, struct UnifexStateWrapper* state)"
+            ei_x_buff *in_buff, struct UnifexStateWrapper* state, erlang_pid *gen_server_pid)"
   end
 
   defp generate_handle_message(functions) do
@@ -269,7 +269,8 @@ defmodule Unifex.CodeGenerator.CNodeCodeGenerator do
         .node_name = node_name, 
         .ei_fd = ei_fd,
         .e_pid = &emsg.from,
-        .wrapper = state
+        .wrapper = state,
+        .gen_server_pid = gen_server_pid
       };
 
       #{handling}

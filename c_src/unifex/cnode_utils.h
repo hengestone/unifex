@@ -42,6 +42,7 @@ typedef struct cnode_context {
   const char *node_name;
   int ei_fd;
   erlang_pid *e_pid;
+  erlang_pid *gs_pid;
   UnifexStateWrapper *wrapper;
   state_linked_list *released_states;
   erlang_pid *gen_server_pid;
@@ -68,7 +69,8 @@ state_linked_list *new_state_linked_list();
 int wrappers_cmp(UnifexStateWrapper *a, UnifexStateWrapper *b);
 
 int handle_message(int ei_fd, const char *node_name, erlang_msg emsg,
-                   ei_x_buff *in_buff, UnifexStateWrapper *state);
+                   ei_x_buff *in_buff, UnifexStateWrapper *state,
+                   erlang_pid *gen_server_pid);
 
 size_t unifex_state_wrapper_sizeof();
 void free_state(UnifexStateWrapper *wrapper);

@@ -24,7 +24,7 @@ typedef struct _UnifexPayload UnifexPayload;
 extern ErlNifResourceType *UNIFEX_PAYLOAD_GUARD_RESOURCE_TYPE;
 UnifexPayload *unifex_payload_alloc(UnifexEnv *env, UnifexPayloadType type,
                                     unsigned int size);
-int unifex_payload_from_term(ErlNifEnv *env, ERL_NIF_TERM binary_term,
+int unifex_payload_from_term(ErlNifEnv *env, ERL_NIF_TERM term,
                              UnifexPayload *payload);
 UNIFEX_TERM unifex_payload_to_term(UnifexEnv *env, UnifexPayload *payload);
 void unifex_payload_guard_destructor(UnifexEnv *env, void *resource);
