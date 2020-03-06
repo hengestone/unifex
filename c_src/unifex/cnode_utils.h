@@ -42,7 +42,7 @@ typedef struct cnode_context {
   const char *node_name;
   int ei_fd;
   erlang_pid *e_pid;
-  erlang_pid *gs_pid;
+  erlang_pid *gen_server_pid;
   UnifexStateWrapper *wrapper;
   state_linked_list *released_states;
   erlang_pid *gen_server_pid;

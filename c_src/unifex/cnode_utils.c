@@ -73,7 +73,7 @@ state_linked_list *new_state_linked_list() {
   return res;
 }
 
-int receive(int ei_fd, const char *node name, UnifexStateWrapper *state,
+int receive(int ei_fd, const char *node_name, UnifexStateWrapper *state,
             erlang_pid *gen_server_pid) {
   if (gen_server_pid == NULL) {
     // before first receive
@@ -83,11 +83,11 @@ int receive(int ei_fd, const char *node name, UnifexStateWrapper *state,
 }
 
 int receive_gen_server_pid(int ei_fd, erlang_pid *pid_dst) {
-  ei_x_buff in_buf;
-  ei_x_new(&in_buf);
+  ei_x_buff in_buff;
+  ei_x_new(&in_buff);
   erlang_msg emsg;
   int res = 0;
-  switch (ei_xreceive_msg_tmo(ei_fd, &emsg, &in_buf, 1000)) {
+  switch (ei_xreceive_msg_tmo(ei_fd, &emsg, &in_buff, 1000)) {
   case ERL_TICK:
     break;
   case ERL_ERROR:
@@ -102,7 +102,7 @@ int receive_gen_server_pid(int ei_fd, erlang_pid *pid_dst) {
     break;
   }
 
-  ei_x_free(&in_buf);
+  ei_x_free(&in_buff);
   return res;
 }
 

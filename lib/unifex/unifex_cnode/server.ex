@@ -115,13 +115,13 @@ defmodule Unifex.UnifexCNode.Server do
   end
 
   @impl true
-  def terminate(reason, %{shm_handler: shm_handler} = _state) do
+  def terminate(_reason, %{shm_handler: shm_handler} = _state) do
     GenServer.stop(shm_handler)
     :ok
   end
 
   @impl true
-  def terminate(reason, _state) do
+  def terminate(_reason, _state) do
     :ok
   end
 
