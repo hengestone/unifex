@@ -1,5 +1,5 @@
 defmodule Unifex.CodeGenerator.CNodeCodeGenerator do
-  alias Unifex.{BaseType, InterfaceIO, CodeGenerator, CodeGenerationMode}
+  alias Unifex.{BaseType, InterfaceIO, CodeGenerator}
   alias Unifex.CodeGenerator.CodeGeneratorUtils
 
   use Bunch
@@ -179,16 +179,14 @@ defmodule Unifex.CodeGenerator.CNodeCodeGenerator do
   end
 
   defp are_void_fun_specs(specs, meta) do
-    :void in (meta
-              |> Keyword.get_values(:label)
-              |> (fn
-                    labels when labels != [] ->
-                      labels
+    labels = meta |> Keyword.get_values(:label)
 
-                    _ ->
-                      [head | _tail] = specs |> Tuple.to_list()
-                      [head]
-                  end).())
+    with [] <- labels do
+      [head | _tail] = specs |> Tuple.to_list()
+      :void == head
+    else
+      labels -> :void in labels
+    end
   end
 
   defp function_declaration_template(return_type, fun_name_prefix, specs) do
@@ -199,8 +197,7 @@ defmodule Unifex.CodeGenerator.CNodeCodeGenerator do
       [
         "cnode_context * ctx"
         | args
-          |> Enum.flat_map(&BaseType.generate_declaration/1)
-          |> Enum.map(&BaseType.make_ptr_const/1)
+          |> Enum.flat_map(&BaseType.generate_const_declaration/1)
       ]
       |> Enum.join(", ")
 
@@ -329,7 +326,7 @@ defmodule Unifex.CodeGenerator.CNodeCodeGenerator do
     ~g"void #{name}_caller(const char * in_buff, int * index, cnode_context * ctx)"
   end
 
-  def optional_state_def(%CodeGenerationMode{use_state: false} = _mode) do
+  def optional_state_def(false = _use_state) do
     ~g"""
     typedef struct UnifexState {
       void * field;
@@ -338,32 +335,32 @@ defmodule Unifex.CodeGenerator.CNodeCodeGenerator do
     """
   end
 
-  def optional_state_def(_mode) do
+  def optional_state_def(_use_state) do
     ~g<>
   end
 
-  def optional_state_related_functions_declaration(%CodeGenerationMode{use_state: false} = _mode) do
+  def optional_state_related_functions_declaration(false = _use_state) do
     ~g"""
     void handle_destroy_state(UnifexEnv *env, State *state);
     """
   end
 
-  def optional_state_related_functions_declaration(_mode) do
+  def optional_state_related_functions_declaration(_use_state) do
     ~g<>
   end
 
-  def optional_state_related_functions(%CodeGenerationMode{use_state: false} = _mode) do
+  def optional_state_related_functions(false = _use_state) do
     ~g"""
     void handle_destroy_state(UnifexEnv *env, State *state) {}
     """
   end
 
-  def optional_state_related_functions(_mode) do
+  def optional_state_related_functions(_use_state) do
     ~g<>
   end
 
   @impl CodeGenerator
-  def generate_header(name, _module, functions, results, sends, _callbacks, mode) do
+  def generate_header(name, _module, functions, results, sends, _callbacks, use_state) do
     ~g"""
     #pragma once
 
@@ -386,7 +383,7 @@ defmodule Unifex.CodeGenerator.CNodeCodeGenerator do
     extern "C" {
     #endif
 
-    #{optional_state_def(mode)}
+    #{optional_state_def(use_state)}
 
     struct UnifexStateWrapper {
       UnifexState *state;
@@ -431,12 +428,21 @@ defmodule Unifex.CodeGenerator.CNodeCodeGenerator do
   end
 
   @impl CodeGenerator
-  def generate_source(name, _module, functions, results, _dirty_funs, sends, _callbacks, mode) do
+  def generate_source(
+        name,
+        _module,
+        functions,
+        results,
+        _dirty_funs,
+        sends,
+        _callbacks,
+        use_state
+      ) do
     ~g"""
     #include <stdio.h>
     #include "#{name}.h"
 
-    #{optional_state_related_functions(mode)}
+    #{optional_state_related_functions(use_state)}
 
     size_t unifex_state_wrapper_sizeof() {
       return sizeof(struct UnifexStateWrapper);

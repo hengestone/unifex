@@ -99,6 +99,11 @@ defmodule Unifex.BaseType do
     end)
   end
 
+  @spec generate_const_declaration(spec_tuple_t()) :: [CodeGenerator.code_t()]
+  def generate_const_declaration(data) do
+    generate_declaration(data) |> Enum.map(&make_ptr_const/1)
+  end
+
   @doc """
   Generates a declaration of parameter (to be placed in function header) based on `c:generate_native_type/0` and
   provided `name`.
@@ -243,11 +248,7 @@ defmodule Unifex.BaseType do
     end
   end
 
-  @doc """
-  Adds 'const' keyword to pointer types, except for state pointer
-  """
-  @spec make_ptr_const(declaration :: String.t()) :: String.t()
-  def make_ptr_const(declaration) do
+  defp make_ptr_const(declaration) do
     state_type = Unifex.BaseType.State.generate_native_type()
 
     if String.match?(declaration, ~r<\*>) and not String.contains?(declaration, state_type) do

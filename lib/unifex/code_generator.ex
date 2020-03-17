@@ -1,6 +1,5 @@
 defmodule Unifex.CodeGenerator do
   alias Unifex.CodeGenerator.{CNodeCodeGenerator, NIFCodeGenerator}
-  alias Unifex.CodeGenerationMode
 
   @type code_t :: String.t()
 
@@ -11,7 +10,7 @@ defmodule Unifex.CodeGenerator do
               results :: any,
               sends :: any,
               callbacks :: any,
-              mode :: CodeGenerationMode.t()
+              use_state :: boolean()
             ) :: code_t()
   @callback generate_source(
               name :: any,
@@ -21,23 +20,23 @@ defmodule Unifex.CodeGenerator do
               dirty_funs :: any,
               sends :: any,
               callbacks :: any,
-              mode :: CodeGenerationMode.t()
+              use_state :: boolean()
             ) :: code_t()
 
   @spec generate_code(
           name :: String.t(),
-          specs :: Unifex.SpecsParser.parsed_specs_t(),
-          mode :: CodeGenerationMode.t()
+          specs :: Unifex.SpecsParser.parsed_specs_t()
         ) ::
           {code_t(), code_t()}
-  def generate_code(name, specs, mode) do
-    implementation = mode |> choose_implementation()
+  def generate_code(name, specs) do
+    implementation = specs |> choose_implementation()
 
     module = specs |> Keyword.get(:module)
     fun_specs = specs |> Keyword.get_values(:fun_specs)
     dirty_funs = specs |> Keyword.get_values(:dirty) |> List.flatten() |> Map.new()
     sends = specs |> Keyword.get_values(:sends)
     callbacks = specs |> Keyword.get_values(:callbacks)
+    use_state = specs |> Keyword.get(:use_state, false)
 
     {functions, results} =
       fun_specs
@@ -47,7 +46,15 @@ defmodule Unifex.CodeGenerator do
     results = results |> Enum.flat_map(fn {name, specs} -> specs |> Enum.map(&{name, &1}) end)
 
     header =
-      implementation.generate_header(name, module, functions, results, sends, callbacks, mode)
+      implementation.generate_header(
+        name,
+        module,
+        functions,
+        results,
+        sends,
+        callbacks,
+        use_state
+      )
 
     source =
       implementation.generate_source(
@@ -58,17 +65,17 @@ defmodule Unifex.CodeGenerator do
         dirty_funs,
         sends,
         callbacks,
-        mode
+        use_state
       )
 
     {header, source}
   end
 
-  defp choose_implementation(%CodeGenerationMode{cnode_mode: false} = _mode) do
-    NIFCodeGenerator
-  end
-
-  defp choose_implementation(%CodeGenerationMode{cnode_mode: true} = _mode) do
-    CNodeCodeGenerator
+  defp choose_implementation(specs) do
+    if specs |> Keyword.get(:cnode_mode, false) do
+      CNodeCodeGenerator
+    else
+      NIFCodeGenerator
+    end
   end
 end

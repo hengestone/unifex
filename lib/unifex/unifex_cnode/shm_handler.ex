@@ -22,7 +22,7 @@ defmodule Unifex.UnifexCNode.ShmHandler do
   @impl true
   def handle_call({:realloc, %Shmex{} = shm, dest_size}, _from, state) do
     state = state |> MapSet.delete(shm)
-    shm = Shmex.realloc(shm, dest_size)
+    shm = Shmex.set_capacity(shm, dest_size)
     state = state |> MapSet.put(shm)
     {:reply, shm, state}
   end

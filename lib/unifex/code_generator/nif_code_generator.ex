@@ -2,7 +2,7 @@ defmodule Unifex.CodeGenerator.NIFCodeGenerator do
   @moduledoc """
   Module responsible for C code genearation based on Unifex specs
   """
-  alias Unifex.{BaseType, InterfaceIO, CodeGenerator, CodeGenerationMode}
+  alias Unifex.{BaseType, InterfaceIO, CodeGenerator}
   alias Unifex.CodeGenerator.CodeGeneratorUtils
 
   use Bunch
@@ -15,7 +15,7 @@ defmodule Unifex.CodeGenerator.NIFCodeGenerator do
   @type code_t() :: String.t()
 
   @impl CodeGenerator
-  def generate_header(name, module, functions, results, sends, callbacks, mode) do
+  def generate_header(name, module, functions, results, sends, callbacks, use_state) do
     ~g"""
     #pragma once
 
@@ -50,7 +50,7 @@ defmodule Unifex.CodeGenerator.NIFCodeGenerator do
      * exisis definition of UnifexNigState
      */
 
-    #{generate_state_related_declarations(module, mode)}
+    #{generate_state_related_declarations(module, use_state)}
 
     /*
      * Callbacks for nif lifecycle hooks.
@@ -90,14 +90,14 @@ defmodule Unifex.CodeGenerator.NIFCodeGenerator do
   end
 
   @impl CodeGenerator
-  def generate_source(name, module, functions, results, dirty_funs, sends, callbacks, mode) do
+  def generate_source(name, module, functions, results, dirty_funs, sends, callbacks, use_state) do
     ~g"""
     #include "#{name}.h"
 
     #{CodeGeneratorUtils.generate_functions(results, &generate_result_function/1)}
     #{CodeGeneratorUtils.generate_functions(sends, &generate_send_function/1)}
-    #{generate_state_related_stuff(module, mode)}
-    #{generate_nif_lifecycle_callbacks(module, callbacks, mode)}
+    #{generate_state_related_stuff(module, use_state)}
+    #{generate_nif_lifecycle_callbacks(module, callbacks, use_state)}
     #{CodeGeneratorUtils.generate_functions(functions, &generate_export_function/1)}
     #{generate_erlang_boilerplate(module, functions, dirty_funs, callbacks)}
     """r
@@ -131,8 +131,7 @@ defmodule Unifex.CodeGenerator.NIFCodeGenerator do
       [
         ~g<UnifexEnv* env>
         | args
-          |> Enum.flat_map(&BaseType.generate_declaration/1)
-          |> Enum.map(&BaseType.make_ptr_const/1)
+          |> Enum.flat_map(&BaseType.generate_const_declaration/1)
       ]
       |> Enum.join(", ")
 
@@ -162,8 +161,7 @@ defmodule Unifex.CodeGenerator.NIFCodeGenerator do
         ~g<UnifexPid pid>,
         ~g<int flags>
         | args
-          |> Enum.flat_map(&BaseType.generate_declaration/1)
-          |> Enum.map(&BaseType.make_ptr_const/1)
+          |> Enum.flat_map(&BaseType.generate_const_declaration/1)
       ]
       |> Enum.join(", ")
 
@@ -221,7 +219,7 @@ defmodule Unifex.CodeGenerator.NIFCodeGenerator do
 
   defp generate_state_related_declarations(
          module,
-         %CodeGenerationMode{use_state: true} = _mode
+         true = _use_state
        ) do
     state_type = BaseType.State.generate_native_type()
 
@@ -255,19 +253,19 @@ defmodule Unifex.CodeGenerator.NIFCodeGenerator do
     """
   end
 
-  defp generate_state_related_declarations(nil, _mode) do
+  defp generate_state_related_declarations(nil, _use_state) do
     ~g<>
   end
 
-  defp generate_state_related_declarations(_module, _mode) do
+  defp generate_state_related_declarations(_module, _use_state) do
     ~g<>
   end
 
-  defp generate_state_related_stuff(nil, _mode) do
+  defp generate_state_related_stuff(nil, _use_state) do
     ~g<>
   end
 
-  defp generate_state_related_stuff(_module, %CodeGenerationMode{use_state: true} = _mode) do
+  defp generate_state_related_stuff(_module, true = _use_state) do
     state_type = BaseType.State.generate_native_type()
 
     ~g"""
@@ -298,7 +296,7 @@ defmodule Unifex.CodeGenerator.NIFCodeGenerator do
     """
   end
 
-  defp generate_state_related_stuff(_module, _mode) do
+  defp generate_state_related_stuff(_module, _use_state) do
     ~g<>
   end
 
@@ -316,22 +314,22 @@ defmodule Unifex.CodeGenerator.NIFCodeGenerator do
     end)
   end
 
-  defp state_resource_type_initialization(%CodeGenerationMode{use_state: true} = _mode) do
+  defp state_resource_type_initialization(true = _use_state) do
     ~g"""
       STATE_RESOURCE_TYPE =
         enif_open_resource_type(env, NULL, "UnifexState", (ErlNifResourceDtor*) destroy_state, flags, NULL);
     """
   end
 
-  defp state_resource_type_initialization(_mode) do
+  defp state_resource_type_initialization(_use_state) do
     ~g<>
   end
 
-  defp generate_nif_lifecycle_callbacks(nil, _callbacks, _mode) do
+  defp generate_nif_lifecycle_callbacks(nil, _callbacks, _use_state) do
     ~g<>
   end
 
-  defp generate_nif_lifecycle_callbacks(_module, callbacks, mode) do
+  defp generate_nif_lifecycle_callbacks(_module, callbacks, use_state) do
     load_result =
       case callbacks[:load] do
         nil -> "0"
@@ -345,7 +343,7 @@ defmodule Unifex.CodeGenerator.NIFCodeGenerator do
 
       ErlNifResourceFlags flags = (ErlNifResourceFlags) (ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER);
 
-      #{state_resource_type_initialization(mode)}
+      #{state_resource_type_initialization(use_state)}
      
       UNIFEX_PAYLOAD_GUARD_RESOURCE_TYPE =
         enif_open_resource_type(env, NULL, "UnifexPayloadGuard", (ErlNifResourceDtor*) unifex_payload_guard_destructor, flags, NULL);

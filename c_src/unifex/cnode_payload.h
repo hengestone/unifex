@@ -43,9 +43,6 @@ int unifex_payload_realloc(UnifexPayload *payload, unsigned int size);
 void unifex_payload_release(UnifexPayload *payload);
 void unifex_payload_release_ptr(UnifexPayload **payload);
 
-// extern ErlNifResourceType *UNIFEX_PAYLOAD_GUARD_RESOURCE_TYPE;
-// void unifex_payload_guard_destructor(UnifexEnv *env, void *resource);
-
 #ifdef __cplusplus
 }
 #endif
