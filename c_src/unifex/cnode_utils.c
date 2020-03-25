@@ -97,6 +97,31 @@ int receive_gen_server_pid(int ei_fd, erlang_pid *pid_dst) {
   return res;
 }
 
+int call_handle_message(int ei_fd, const char *node_name, erlang_msg emsg,
+                        ei_x_buff *in_buff, struct UnifexStateWrapper *state,
+                        erlang_pid *gen_server_pid) {
+
+  handle_message_ctx hmc;
+  hmc.index = 0;
+
+  ei_decode_version(in_buff->buff, &hmc.index, &hmc.version);
+
+  ei_decode_tuple_header(in_buff->buff, &hmc.index, &hmc.arity);
+
+  char fun_name[2048];
+  ei_decode_atom(in_buff->buff, &hmc.index, fun_name);
+  hmc.fun_name = fun_name;
+
+  hmc.ctx.node_name = node_name;
+  hmc.ctx.ei_fd = ei_fd;
+  hmc.ctx.e_pid = &emsg.from;
+  hmc.ctx.wrapper = state;
+  hmc.ctx.gen_server_pid = gen_server_pid;
+
+  return handle_message(ei_fd, node_name, emsg, in_buff, state, gen_server_pid,
+                        &hmc);
+}
+
 int receive_reqular_msg(int ei_fd, const char *node_name,
                         UnifexStateWrapper *state, erlang_pid *gen_server_pid) {
   ei_x_buff in_buf;
@@ -111,8 +136,8 @@ int receive_reqular_msg(int ei_fd, const char *node_name,
     break;
   default:
     if (emsg.msgtype == ERL_REG_SEND &&
-        handle_message(ei_fd, node_name, emsg, &in_buf, state,
-                       gen_server_pid)) {
+        call_handle_message(ei_fd, node_name, emsg, &in_buf, state,
+                            gen_server_pid)) {
       res = -1;
     }
     break;

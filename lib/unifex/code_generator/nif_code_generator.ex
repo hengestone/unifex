@@ -131,7 +131,7 @@ defmodule Unifex.CodeGenerator.NIFCodeGenerator do
       [
         ~g<UnifexEnv* env>
         | args
-          |> Enum.flat_map(&BaseType.generate_const_declaration/1)
+          |> Enum.flat_map(&BaseType.generate_fun_arg_declaration/1)
       ]
       |> Enum.join(", ")
 
@@ -161,7 +161,7 @@ defmodule Unifex.CodeGenerator.NIFCodeGenerator do
         ~g<UnifexPid pid>,
         ~g<int flags>
         | args
-          |> Enum.flat_map(&BaseType.generate_const_declaration/1)
+          |> Enum.flat_map(&BaseType.generate_fun_arg_declaration/1)
       ]
       |> Enum.join(", ")
 

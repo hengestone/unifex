@@ -52,6 +52,14 @@ typedef struct cnode_context {
 
 typedef cnode_context UnifexEnv;
 
+typedef struct handle_message_ctx {
+  int index;
+  int version;
+  int arity;
+  char *fun_name;
+  cnode_context ctx;
+} handle_message_ctx;
+
 void prepare_ei_x_buff(ei_x_buff *buff, const char *node_name,
                        const char *msg_type);
 void prepare_result_buff(ei_x_buff *buff, const char *node_name);
@@ -72,7 +80,7 @@ int wrappers_cmp(UnifexStateWrapper *a, UnifexStateWrapper *b);
 
 int handle_message(int ei_fd, const char *node_name, erlang_msg emsg,
                    ei_x_buff *in_buff, UnifexStateWrapper *state,
-                   erlang_pid *gen_server_pid);
+                   erlang_pid *gen_server_pid, handle_message_ctx *hmc);
 
 size_t unifex_state_wrapper_sizeof();
 void free_state(UnifexStateWrapper *wrapper);

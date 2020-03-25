@@ -197,7 +197,7 @@ defmodule Unifex.CodeGenerator.CNodeCodeGenerator do
       [
         "cnode_context * ctx"
         | args
-          |> Enum.flat_map(&BaseType.generate_const_declaration/1)
+          |> Enum.flat_map(&BaseType.generate_fun_arg_declaration/1)
       ]
       |> Enum.join(", ")
 
@@ -223,7 +223,8 @@ defmodule Unifex.CodeGenerator.CNodeCodeGenerator do
 
   defp generate_handle_message_declaration() do
     "int handle_message(int ei_fd, const char *node_name, erlang_msg emsg,
-            ei_x_buff *in_buff, struct UnifexStateWrapper* state, erlang_pid *gen_server_pid)"
+            ei_x_buff *in_buff, struct UnifexStateWrapper* state, erlang_pid *gen_server_pid, 
+            handle_message_ctx *hmc)"
   end
 
   defp generate_handle_message(functions) do
@@ -232,8 +233,8 @@ defmodule Unifex.CodeGenerator.CNodeCodeGenerator do
       |> Enum.map(fn
         {f_name, _args} ->
           ~g"""
-          if (strcmp(fun_name, "#{f_name}") == 0) {
-              #{f_name}_caller(in_buff->buff, &index, &ctx);
+          if (strcmp(hmc->fun_name, "#{f_name}") == 0) {
+              #{f_name}_caller(in_buff->buff, &hmc->index, &hmc->ctx);
             }   
           """
       end)
@@ -242,9 +243,9 @@ defmodule Unifex.CodeGenerator.CNodeCodeGenerator do
     {
       char err_msg[4000];
       strcpy(err_msg, "function ");
-      strcat(err_msg, fun_name);
+      strcat(err_msg, hmc->fun_name);
       strcat(err_msg, " not available");
-      sending_error(&ctx, err_msg);
+      sending_error(&hmc->ctx, err_msg);
     }
     """
 
@@ -252,24 +253,6 @@ defmodule Unifex.CodeGenerator.CNodeCodeGenerator do
 
     ~g"""
     #{generate_handle_message_declaration()} {
-      int index = 0;
-      int version;
-      ei_decode_version(in_buff->buff, &index, &version);
-
-      int arity;
-      ei_decode_tuple_header(in_buff->buff, &index, &arity);
-
-      char fun_name[2048];
-      ei_decode_atom(in_buff->buff, &index, fun_name);
-                
-      cnode_context ctx = {
-        .node_name = node_name, 
-        .ei_fd = ei_fd,
-        .e_pid = &emsg.from,
-        .wrapper = state,
-        .gen_server_pid = gen_server_pid
-      };
-
       #{handling}
 
       return 0;

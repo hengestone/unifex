@@ -37,6 +37,11 @@ defmodule Unifex.BaseType do
   @callback generate_native_type() :: CodeGenerator.code_t()
 
   @doc """
+  Generates a native counterpart for the type, which can be used in function declaration.
+  """
+  @callback generate_fun_arg_native_type() :: CodeGenerator.code_t()
+
+  @doc """
   Generates an expression that will return how many bytes should be allocated for this type.
   """
   @callback generate_sizeof() :: CodeGenerator.code_t()
@@ -68,6 +73,9 @@ defmodule Unifex.BaseType do
     quote do
       @behaviour unquote(__MODULE__)
       use Unifex.CodeGenerator.CodeGeneratorUtils
+
+      defdelegate generate_fun_arg_native_type(), to: __MODULE__, as: :generate_native_type
+      defoverridable generate_fun_arg_native_type: 0
     end
   end
 
@@ -99,9 +107,17 @@ defmodule Unifex.BaseType do
     end)
   end
 
-  @spec generate_const_declaration(spec_tuple_t()) :: [CodeGenerator.code_t()]
-  def generate_const_declaration(data) do
-    generate_declaration(data) |> Enum.map(&make_ptr_const/1)
+  @spec generate_fun_arg_declaration(spec_tuple_t()) :: [CodeGenerator.code_t()]
+  def generate_fun_arg_declaration({name, {:list, type}}) do
+    do_generate_fun_arg_declaration(name, {:list, type}) ++ [~g<unsigned int #{name}_length>]
+  end
+
+  def generate_fun_arg_declaration({name, type}) do
+    do_generate_fun_arg_declaration(name, type)
+  end
+
+  defp do_generate_fun_arg_declaration(name, type) do
+    [~g<#{call_generate_fun_arg_native_type(type)} #{name}>]
   end
 
   @doc """
@@ -226,6 +242,14 @@ defmodule Unifex.BaseType do
     end)
   end
 
+  defp call_generate_fun_arg_native_type({:list, type}) do
+    ~g<#{call_generate_fun_arg_native_type(type)}*>
+  end
+
+  defp call_generate_fun_arg_native_type(type) do
+    call(type, :generate_fun_arg_native_type, [], fn -> ~g<#{type}> end)
+  end
+
   defp call_generate_native_type({:list, type}) do
     ~g<#{call_generate_native_type(type)}*>
   end
@@ -245,16 +269,6 @@ defmodule Unifex.BaseType do
       apply(module, callback, args)
     else
       apply(default_f, [])
-    end
-  end
-
-  defp make_ptr_const(declaration) do
-    state_type = Unifex.BaseType.State.generate_native_type()
-
-    if String.match?(declaration, ~r<\*>) and not String.contains?(declaration, state_type) do
-      "const " <> declaration
-    else
-      declaration
     end
   end
 end
